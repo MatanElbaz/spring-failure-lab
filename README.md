@@ -23,12 +23,12 @@ make break
 
 | Scenario | Symptom | Status |
 |---|---|---|
-| [kafka/offset-committed-before-work-done](scenarios/kafka/offset-committed-before-work-done) | Records are silently lost on graceful shutdown when a listener hands work to a thread pool and the offset is committed before the work is done. | Reproduced 10 of 10 runs, broken and fixed (2026-10-03) |
+| [kafka/offset-committed-before-work-done](scenarios/kafka/offset-committed-before-work-done) | Records are silently lost on graceful shutdown when a listener hands work to a thread pool and the offset is committed before the work is done. | Reproduced 10 of 10 runs with `make repeat`, broken and fixed (2026-10-03, local machine) |
 
 ## Requirements
 
 - JDK 21 and Maven 3.9
-- A running Docker daemon (scenarios start Kafka and PostgreSQL with Testcontainers)
+- A running Docker daemon (scenarios start their dependencies, such as Kafka, with Testcontainers)
 - `make`
 
 Python 3 is needed only to run the repository's own checks.

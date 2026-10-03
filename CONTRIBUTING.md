@@ -45,7 +45,7 @@ Required top-level keys: `id`, `area`, `symptom`, `signature_logs`, `versions_te
 
 ### README rules
 
-- Every line quoted in `## Signature` must appear in `expected-signature.txt`. Do not edit that file by hand; it comes from the test run.
+- Every line quoted in `## Signature` must appear in `expected-signature.txt`; a quote may be part of a line. Quote only text that is the same on every run, not counts that vary. Do not edit that file by hand; it comes from the test run.
 - Every non-trivial claim cites a source from `scenario.yaml`.
 - Quote sources sparingly: at most one short quote (under 15 words) per source, with attribution. Prefer a paraphrase and a link.
 - `## What this does not prove` must say honestly what the test does not show.
@@ -59,14 +59,14 @@ Required top-level keys: `id`, `area`, `symptom`, `signature_logs`, `versions_te
 
 ## Working on the repository
 
-Requirements: JDK 21, a running Docker daemon, `make`, and Python 3 for the checks.
+Requirements: JDK 21, Maven 3.9, a running Docker daemon, `make`, and Python 3 for the checks.
 
 ```
 make lint    # check scenario structure and provenance
 make test    # run the linter's own tests
 ```
 
-CI runs both, then runs `make break` and `make fix` for every scenario.
+CI runs the tests and the linter in one job and, in a separate job, runs `make break` and `make fix` once for every scenario.
 
 ## Proposing a scenario
 
