@@ -1,0 +1,3 @@
+consumer #1 down | processed=36 | dropped-in-queue=160 | interrupted-in-flight=4 | committed offset=200
+replacement idle | processed by replacement=0 | committed offset=200
+SUMMARY variant=broken | produced=200 | committed offset after shutdown=200 | processed=36 | dropped-in-queue=160 | lost=164 | duplicates=0

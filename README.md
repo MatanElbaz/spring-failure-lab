@@ -5,15 +5,15 @@
 
 Reproduce real backend failures on Spring Boot, Kafka and PostgreSQL with one command. Each scenario ships the symptom, the root cause, the fix, and a test that proves it.
 
-**Status: early.** One scenario at first, more planned. Only scenarios that exist and pass are listed.
+**Status: early.** One scenario, more planned. Only scenarios that exist and pass are listed.
 
 ## Run a scenario
 
-Each scenario is a self-contained Maven project under `scenarios/<area>/<name>/`.
+Each scenario is a self-contained Maven project under `scenarios/<area>/<name>/`. The first one:
 
 ```
 git clone https://github.com/MatanElbaz/spring-failure-lab.git
-cd spring-failure-lab/scenarios/<area>/<name>
+cd spring-failure-lab/scenarios/kafka/offset-committed-before-work-done
 make break
 ```
 
@@ -21,11 +21,13 @@ make break
 
 ## Scenarios
 
-The first scenario is being added: kafka/offset-committed-before-work-done
+| Scenario | Symptom | Status |
+|---|---|---|
+| [kafka/offset-committed-before-work-done](scenarios/kafka/offset-committed-before-work-done) | Records are silently lost on graceful shutdown when a listener hands work to a thread pool and the offset is committed before the work is done. | Reproduced 10 of 10 runs, broken and fixed (2026-10-03) |
 
 ## Requirements
 
-- JDK 21
+- JDK 21 and Maven 3.9
 - A running Docker daemon (scenarios start Kafka and PostgreSQL with Testcontainers)
 - `make`
 
