@@ -4,7 +4,7 @@ A Spring Kafka listener hands each record to a thread pool and returns. When the
 
 ## Run it
 
-Requirements: JDK 21, Maven 3.9, a running Docker daemon (the test starts Kafka with Testcontainers; the first run pulls `apache/kafka:4.2.1`).
+Requirements: JDK 21, Maven 3.9, a running Docker daemon (the test starts Kafka with Testcontainers; the first run pulls `apache/kafka:4.2.1`). The first run also downloads the Maven dependencies; because the Makefile runs Maven with `-q`, nothing is printed until the test starts, which can take a few minutes.
 
 ```
 make break    # the failing implementation: prints a timeline, then the loss
@@ -12,9 +12,9 @@ make fix      # the corrected implementation under the same conditions
 make repeat   # break then fix, 10 times; prints "reproduced 10/10" when every run behaves as described
 ```
 
-`make repeat N=3` changes the number of rounds. `make break` also writes the key lines of its run to `expected-signature.txt`.
+`make repeat N=3` changes the number of rounds. `make break` also writes the key lines of its run to `expected-signature.txt`. This is a tracked file and the counts in it change between runs; `git checkout -- expected-signature.txt` undoes the change if you do not mean to commit it.
 
-What `make break` prints (one real run; the numbers vary by one or two between runs, see the end of the Signature section):
+What `make break` prints (one real run; the counts vary by a few records between runs, see the end of the Signature section):
 
 ```
 [  210 ms] kafka ready, topic 'orders' (1 partition) created
@@ -38,15 +38,14 @@ The test produces 200 records to a one-partition topic. Each record takes 50 ms 
 
 ## Signature
 
-The lines below come from `expected-signature.txt`, which `make break` writes. The offset after shutdown equals the number of records produced, while fewer records were processed, and the difference is lost.
+The lines below appear in `expected-signature.txt` on every run of `make break`. They are quoted in part: the counts that change from run to run (`processed`, `dropped-in-queue`, `lost`) are left out; a full run is shown under "Run it" above. The offset after shutdown equals the number of records produced, while fewer records were processed, and the difference is lost.
 
 ```
-consumer #1 down | processed=36 | dropped-in-queue=160 | interrupted-in-flight=4 | committed offset=200
 replacement idle | processed by replacement=0 | committed offset=200
-SUMMARY variant=broken | produced=200 | committed offset after shutdown=200 | processed=36 | dropped-in-queue=160 | lost=164 | duplicates=0
+SUMMARY variant=broken | produced=200 | committed offset after shutdown=200
 ```
 
-Across ten runs of `make repeat` on 2026-10-03 the broken variant processed 35 to 37 of the 200 records and lost 163 to 165; the committed offset after shutdown was 200 every time. The exact split varies because the four worker threads keep finishing records while the container stops.
+In eleven runs on 2026-10-03 (ten with `make repeat` and one review run) the broken variant processed 34 to 37 of the 200 records and lost 163 to 166; the committed offset after shutdown was 200 every time. The exact split varies because the four worker threads keep finishing records while the container stops.
 
 ## Root cause
 
