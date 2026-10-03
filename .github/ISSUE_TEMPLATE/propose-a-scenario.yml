@@ -1,0 +1,52 @@
+name: Propose a scenario
+description: Suggest a backend failure that can be reproduced with one command.
+title: "Scenario: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A scenario needs a public primary source, a deterministic trigger, and a test that passes in both directions (the failure appears in `broken`, never in `fixed`). See CONTRIBUTING.md.
+        Please do not include code, data, names or incident details that belong to an employer or any other party that has not agreed to publish them.
+  - type: textarea
+    id: symptom
+    attributes:
+      label: Symptom
+      description: What an engineer sees in production, in the words they would search for.
+      placeholder: "Records go missing after a deploy; the same record is processed twice."
+    validations:
+      required: true
+  - type: input
+    id: stack
+    attributes:
+      label: Stack versions
+      description: Spring Boot, spring-kafka or Kafka clients, PostgreSQL, JDBC driver, and anything else that matters.
+    validations:
+      required: true
+  - type: textarea
+    id: trigger
+    attributes:
+      label: How to trigger it
+      description: The exact conditions that produce the failure, and why they are deterministic (explicit pauses, small timeouts, a proxy that adds latency) rather than a matter of luck.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Public source URL
+      description: Official documentation, a KIP, source code, a vendor page, or a public postmortem that states the mechanism.
+    validations:
+      required: true
+  - type: textarea
+    id: not-covered
+    attributes:
+      label: Why it is not covered yet
+      description: What the existing scenarios and the linked source do not already show.
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: The source is public and the mechanism does not come from non-public material.
+          required: true
