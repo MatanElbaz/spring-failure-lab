@@ -1,0 +1,13 @@
+# Build output
+target/
+*.class
+
+# IDE and OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
