@@ -216,6 +216,73 @@ class CheckTests(ScenarioTestCase):
         self.assertTrue(all(e.startswith(bad + ": ") for e in errors))
 
 
+class SignatureAndFenceTests(ScenarioTestCase):
+    def test_signature_logs_entry_missing_from_expected_signature(self):
+        yaml_text = YAML_OK.replace('["committed offset"]', '["committed offset", "no such text"]')
+        path = self.make_scenario(**{"scenario.yaml": yaml_text})
+        self.assertEqual(
+            check_scenarios.check(self.root),
+            ["%s: signature_logs entry not found in expected-signature.txt: no such text" % path],
+        )
+
+    def test_signature_logs_block_list_is_checked_too(self):
+        yaml_text = YAML_OK.replace(
+            'signature_logs: ["committed offset"]',
+            'signature_logs:\n  - "committed offset"\n  - \'lost: 164\'\n  - "absent fragment"',
+        )
+        path = self.make_scenario(**{"scenario.yaml": yaml_text})
+        self.assertEqual(
+            check_scenarios.check(self.root),
+            ["%s: signature_logs entry not found in expected-signature.txt: absent fragment" % path],
+        )
+
+    def test_signature_logs_entries_that_are_substrings_pass(self):
+        yaml_text = YAML_OK.replace('["committed offset"]', '["committed offset", "lost: 16"]')
+        self.make_scenario(**{"scenario.yaml": yaml_text})
+        self.assertEqual(check_scenarios.check(self.root), [])
+
+    def test_signature_section_without_fenced_block_is_an_error(self):
+        readme = README_OK.replace("```\ncommitted offset: 200\nlost: 164\n```\n", "Only prose here.\n")
+        path = self.make_scenario(**{"README.md": readme})
+        self.assertEqual(
+            check_scenarios.check(self.root),
+            ["%s: ## Signature has no quoted lines" % path],
+        )
+
+    def test_signature_fenced_block_with_only_blank_lines_is_an_error(self):
+        readme = README_OK.replace("committed offset: 200\nlost: 164\n", "\n   \n")
+        path = self.make_scenario(**{"README.md": readme})
+        self.assertEqual(
+            check_scenarios.check(self.root),
+            ["%s: ## Signature has no quoted lines" % path],
+        )
+
+    def test_heading_inside_a_fence_does_not_count(self):
+        readme = README_OK.replace("## Fix\n", "Fix\n\n```\n## Fix\n```\n")
+        path = self.make_scenario(**{"README.md": readme})
+        self.assertEqual(
+            check_scenarios.check(self.root),
+            ["%s: missing heading '## Fix'" % path],
+        )
+
+    def test_signature_heading_inside_an_earlier_fence_does_not_start_the_section(self):
+        readme = README_OK.replace(
+            "Records go missing after a deploy.\n",
+            "Records go missing after a deploy.\n\n```\n## Signature\nnot a quoted line\n```\n",
+        )
+        self.make_scenario(**{"README.md": readme})
+        self.assertEqual(check_scenarios.check(self.root), [])
+
+    def test_fence_opened_before_the_section_is_tracked_across_sections(self):
+        readme = README_OK.replace(
+            "Acknowledge after the work.\n",
+            "```java\n// a ``` marker in a fence is the closing one\n```\n\n"
+            "```\n## Signature\nnot a quoted line\n```\n",
+        )
+        self.make_scenario(**{"README.md": readme})
+        self.assertEqual(check_scenarios.check(self.root), [])
+
+
 class CliTests(ScenarioTestCase):
     def run_cli(self):
         return subprocess.run(

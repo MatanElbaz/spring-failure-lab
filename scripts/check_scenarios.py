@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 REQUIRED_HEADINGS = (
     "## Symptom",
@@ -44,28 +44,79 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def heading_lines(text: str) -> List[str]:
-    return [line.rstrip() for line in text.splitlines()]
+def outside_fences(text: str) -> List[str]:
+    """Lines of text that are not part of a fenced code block (fence lines included in neither)."""
+    lines: List[str] = []
+    in_fence = False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            lines.append(line.rstrip())
+    return lines
 
 
-def signature_quotes(readme: str) -> List[str]:
-    """Non-empty lines inside fenced blocks of the '## Signature' section."""
+def signature_section(readme: str) -> Optional[List[str]]:
+    """Non-empty lines inside fenced blocks of the '## Signature' section.
+
+    Returns None when the section does not exist. Fences are tracked across the whole
+    README, so a '## Signature' line inside a code block never starts the section.
+    """
     quotes: List[str] = []
+    found = False
     in_section = False
     in_fence = False
     for line in readme.splitlines():
         stripped = line.strip()
-        if not in_fence and line.startswith("## "):
-            in_section = line.rstrip() == "## Signature"
-            continue
-        if not in_section:
-            continue
         if stripped.startswith("```"):
             in_fence = not in_fence
             continue
-        if in_fence and stripped:
-            quotes.append(stripped)
-    return quotes
+        if in_fence:
+            if in_section and stripped:
+                quotes.append(stripped)
+            continue
+        if line.startswith("## "):
+            in_section = line.rstrip() == "## Signature"
+            found = found or in_section
+    return quotes if found else None
+
+
+def _unquote(item: str) -> str:
+    item = item.strip()
+    if len(item) >= 2 and item[0] == item[-1] and item[0] in "\"'":
+        quote, item = item[0], item[1:-1]
+        if quote == '"':
+            item = item.replace('\\"', '"').replace("\\\\", "\\")
+    return item
+
+
+def yaml_list(text: str, key: str) -> List[str]:
+    """Items of a top-level list key, written inline ([a, "b"]) or as '- item' lines."""
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        match = re.match(r"^%s\s*:\s*(.*)$" % re.escape(key), line)
+        if not match:
+            continue
+        rest = match.group(1).strip()
+        if rest.startswith("["):
+            quoted = re.findall(r"\"((?:[^\"\\]|\\.)*)\"|'([^']*)'", rest)
+            if quoted:
+                return [a if a or not b else b for a, b in quoted]
+            return [_unquote(part) for part in rest.strip("[]").split(",") if part.strip()]
+        items: List[str] = []
+        for following in lines[index + 1:]:
+            if not following.strip():
+                continue
+            bullet = re.match(r"^\s+-\s+(.*)$", following)
+            if bullet:
+                items.append(_unquote(bullet.group(1)))
+            elif following[0] in " \t":
+                continue
+            else:
+                break
+        return items
+    return []
 
 
 def makefile_targets(text: str) -> set:
@@ -95,7 +146,7 @@ def check_scenario(root: Path, directory: Path) -> List[str]:
     if readme is None:
         err("README.md not found")
     else:
-        headings = set(heading_lines(readme))
+        headings = set(outside_fences(readme))
         for heading in REQUIRED_HEADINGS:
             if heading not in headings:
                 err("missing heading '%s'" % heading)
@@ -110,10 +161,18 @@ def check_scenario(root: Path, directory: Path) -> List[str]:
     else:
         err("expected-signature.txt not found")
 
-    if readme is not None and signature_lines is not None:
-        for quote in signature_quotes(readme):
+    quotes = signature_section(readme) if readme is not None else None
+    if quotes is not None and not quotes:
+        err("## Signature has no quoted lines")
+    if quotes and signature_lines is not None:
+        for quote in quotes:
             if not any(quote in line for line in signature_lines):
                 err("signature line not found in expected-signature.txt: %s" % quote)
+
+    if signature_lines is not None:
+        for entry in yaml_list(yaml_text, "signature_logs"):
+            if not any(entry in line for line in signature_lines):
+                err("signature_logs entry not found in expected-signature.txt: %s" % entry)
 
     searched = yaml_text if readme is None else readme + "\n" + yaml_text
     for placeholder in PLACEHOLDERS:
