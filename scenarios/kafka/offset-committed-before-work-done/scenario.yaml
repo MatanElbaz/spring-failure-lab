@@ -1,0 +1,33 @@
+id: kafka/offset-committed-before-work-done
+area: kafka
+symptom:
+  - "records missing after a deploy or restart, with no error in the logs"
+  - "consumer lag is zero but the work for some records was never done"
+signature_logs:
+  - "committed offset=200"
+  - "dropped-in-queue="
+  - "lost="
+versions_tested:
+  spring-boot: "4.1.1"
+  spring-kafka: "4.1.1"
+  kafka-clients: "4.2.1"
+  testcontainers: "2.0.5"
+  kafka-broker-image: "apache/kafka:4.2.1"
+  java: "21.0.11"
+sources:
+  - title: "Spring for Apache Kafka reference: Message Listener Containers"
+    url: "https://docs.spring.io/spring-kafka/reference/kafka/receiving-messages/message-listener-container.html"
+    accessed: "2026-10-03"
+  - title: "Spring for Apache Kafka reference: Manually Committing Offsets"
+    url: "https://docs.spring.io/spring-kafka/reference/kafka/receiving-messages/ooo-commits.html"
+    accessed: "2026-10-03"
+  - title: "Spring for Apache Kafka reference: Container Properties"
+    url: "https://docs.spring.io/spring-kafka/reference/kafka/container-props.html"
+    accessed: "2026-10-03"
+  - title: "Apache Kafka 4.2 KafkaConsumer javadoc"
+    url: "https://kafka.apache.org/42/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+    accessed: "2026-10-03"
+reproduced:
+  by: "Matan Elbaz"
+  date: "2026-10-03"
+  status: confirmed
